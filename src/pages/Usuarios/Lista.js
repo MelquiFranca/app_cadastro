@@ -6,7 +6,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, {useState, useEffect} from 'react'
 import {TouchableOpacity, Alert, FlatList, View, Image, Text, StyleSheet } from 'react-native'
-// import Icon from 'react-native-vector-icons/dist/FontAwesome';
 import { api, url } from '../../api'
 
 const Lista = (props) => {
@@ -26,8 +25,9 @@ const Lista = (props) => {
         setUsuarios(data.dados)
   }
   const renderItemUsuario = ({item}) => {
+    console.log(item.foto)
     return (<View style={style.itemLista}>
-        {/* <Text style={style.itemListaText}>{item.foto}</Text> */}
+        
         <Image 
             source={{uri: `${url}uploads/${item.foto}`}}
             style={style.foto}
@@ -35,22 +35,31 @@ const Lista = (props) => {
         <Text style={{...style.itemListaText, flex: 1}}>{item.nome}</Text>
         <TouchableOpacity 
             style={style.btnEditar}
-            onPress={{}}
+            onPress={() => handleClickNovoEditar(item.id)}
         >
             <Text>Editar</Text>
         </TouchableOpacity>
         <TouchableOpacity 
             style={style.btnExcluir}
-            onPress={{}}
+            onPress={() => handleClickExcluir(item.id)}
         >
             <Text>Excluir</Text>
         </TouchableOpacity>
     </View>)
   }
 
-  const handleClickNovo = () => {
-    props.navigation.navigate('Cadastro')
-  }
+    const handleClickNovoEditar = (id=null) => {
+        props.navigation.navigate('Cadastro', {id})
+    }
+    
+    const handleClickExcluir = async(id) => {
+        const { data } = await api.delete(`usuarios/${id}`)        
+        if(data?.error)
+            Alert.alert('Erro', data.message)
+            
+        Alert.alert('Sucesso', data.message)
+        handleClickAtualizar()
+    }
   return (<View style={style.container}>
     <FlatList 
         style={{width: '100%'}}
@@ -63,18 +72,16 @@ const Lista = (props) => {
     <View style={style.containerBotao}>
         <TouchableOpacity 
             style={style.btnNovo}
-            onPress={handleClickNovo}
+            onPress={_=>handleClickNovoEditar(null)}
         >
-            <Text style={style.btnNovoText}>+</Text>
+            <Text style={style.btnNovoText}>Novo</Text>
         </TouchableOpacity>
 
         <TouchableOpacity 
             style={style.btnReload}
             onPress={handleClickAtualizar}
         >
-            <Text style={style.btnReloadText}>
-                <Icon name="search"/>
-            </Text>
+            <Text style={style.btnReloadText}>Atualizar</Text>
         </TouchableOpacity>
     </View>
   </View>)
@@ -93,28 +100,26 @@ const style = StyleSheet.create({
         alignItems: 'center', 
         justifyContent: 'space-evenly',
     },
-    btnNovo: {
-        borderRadius: 100,
-        height: 70,
-        width: 70,
+    btnNovo: {                
+        paddingHorizontal: 35,
+        paddingVertical: 10,
         backgroundColor: 'lightblue',
         justifyContent: 'center',
         alignItems: 'center',
     },
-    btnReload: {
-        borderRadius: 100,
+    btnReload: {        
         backgroundColor: 'lightgreen',
         justifyContent: 'center',
         alignItems: 'center',
-        height: 70,
-        width: 70,
+        paddingHorizontal: 20,
+        paddingVertical: 10,
     },
     btnReloadText: {
-        fontSize: 30,
+        fontSize: 20,
         color: '#FFF'
     },
     btnNovoText: {
-        fontSize: 30,
+        fontSize: 20,
         color: '#FFF'
     },
     btnEditar: {
@@ -140,7 +145,7 @@ const style = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         paddingHorizontal: 10,
-        borderWidth: 1,
+        borderBottomWidth: 1,
         borderColor: '#999',
     },
     itemListaText: {

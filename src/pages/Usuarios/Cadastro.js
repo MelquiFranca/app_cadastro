@@ -7,15 +7,51 @@
 /* eslint-disable prettier/prettier */
 import React, { useState, useEffect } from 'react'
 import { View, Text, TouchableOpacity, TextInput, StyleSheet, Image, Alert } from 'react-native'
+import DateTimePicker from '@react-native-community/datetimepicker'
 import DocumentPicker from 'react-native-document-picker'
-import { api } from '../../api'
+import { api, url } from '../../api'
+import { dataFormatadaBanco, dataFormatadaUsuario } from '../../utils'
 
-const Cadastro = ({}) => {
+const Cadastro = (props) => {
+    const [exibeDataPicker, setExibeDataPicker] = useState(false)
+    const [idUsuario, setIdUsuario] = useState(null)
     const [nome, setNome] = useState('')
     const [foto, setFoto] = useState(null)
     const [codigo, setCodigo] = useState(null)
     const [nascimento, setNascimento] = useState(null)
 
+    useEffect(() => {
+        handleSelecionarUsuario()
+    }, [])
+
+    const handleSelecionarUsuario = async () => {
+        const id = props.route.params?.id
+        if(!id)
+            return
+
+        setIdUsuario(id)
+        const { data } = await api.get(`usuarios/${id}`)
+
+        if(data?.error) {
+            Alert.alert('Erro', data.message)
+            props.navigation.navigate('Lista')
+        }
+
+        const {dados} = data
+
+        setNome(dados.nome)
+        setFoto({uri: `${url}uploads/${dados.foto}`})
+        setCodigo(dados.codigo.toString())
+        setNascimento(new Date(dados.nascimento))
+
+    }
+    const limparDados  = () => {
+        setIdUsuario(null)
+        setNome('')
+        setFoto(null)
+        setCodigo(null)
+        setNascimento(null)
+    }
     const selecionarFoto = async () => {
         try {
            (async () =>{
@@ -39,7 +75,8 @@ const Cadastro = ({}) => {
             const formData = new FormData()
             formData.append('codigo', codigo)
             formData.append('nome', nome)
-            formData.append('nascimento', nascimento)
+            formData.append('nascimento', dataFormatadaBanco(new Date(nascimento)))
+
             if(foto?.uri) {
                 formData.append('foto', {
                     uri: foto.uri,
@@ -48,7 +85,13 @@ const Cadastro = ({}) => {
                 })
             }
 
-            const { dados, error, message } = api.post('/usuarios', formData)
+            let retorno
+            if(idUsuario)
+                retorno = await api.put(`/usuarios/${idUsuario}`, formData)
+            else
+                retorno = await api.post('/usuarios', formData)
+
+            const { error, message } = retorno.data
 
             let titulo
             if(error)
@@ -57,6 +100,7 @@ const Cadastro = ({}) => {
                 titulo = 'Sucesso'
 
             Alert.alert(titulo, message)
+            limparDados()
         } catch(e) {
             Alert.alert('Erro', e.message)
         }
@@ -73,18 +117,31 @@ const Cadastro = ({}) => {
             Alert.alert(titulo, `Favor preencher o campo Código.`)
             return false
         }
-        // if(!nascimento) {
-        //     Alert.alert(titulo, `Favor preencher o campo Nascimento.`)
-        //     return false
-        // }
+        if(!nascimento) {
+            Alert.alert(titulo, `Favor preencher o campo Nascimento.`)
+            return false
+        }
         return true
+    }
+
+    const handleCancelaData = () => {
+        setExibeDataPicker(false)
+        setNascimento(new Date())
+    }
+    const handleChangeData = (e, data) => {
+        setExibeDataPicker(false)
+        setNascimento(data)
+    }
+    const handleExibeDataPicker = () => {
+        setNascimento(new Date())
+        setExibeDataPicker(true)
     }
 
     return (<View style={style.container}>
         <View style={style.campoFoto}>
             <View style={style.viewImagem}>
                 {foto?.uri ?
-                    <Image source={{uri: foto.uri}} style={style.imagem}/> 
+                    <Image source={{uri: foto.uri}} style={style.imagem}/>
                     :
                     <Text>Nenhuma imagem selecionada</Text>
                 }
@@ -116,18 +173,39 @@ const Cadastro = ({}) => {
             </View>
             <View style={style.row}>
                 <Text style={style.label}>Data de Nascimento:</Text>
-                <TextInput placeholder="" value={nascimento} onChangeText={setNascimento}/>
+                <Text style={style.label}>{nascimento ? dataFormatadaUsuario(new Date(nascimento)) : 'DD/MM/AAAA'}</Text>
+                {exibeDataPicker && <DateTimePicker
+                    testID="dateTimePicker"
+                    value={nascimento}
+                    display='default'
+                    mode='date'
+                    is24Hour={true}
+                    onChange={handleChangeData}
+                    // style={{backgroundColor: CORES.primeira}}
+                    onTouchCancel={handleCancelaData}
+
+                />}
+
+                <TouchableOpacity
+                    style={{...style.btn, ...style.btnCaptura}}
+                    onPress={handleExibeDataPicker}
+                >
+                    <Text>Data</Text>
+                </TouchableOpacity>
             </View>
 
             <View style={style.btnGrupo}>
-                <TouchableOpacity 
+                <TouchableOpacity
                     style={{...style.btn, ...style.btnPrimary}}
                     onPress={handleClickSalvar}
                 >
                     <Text>Salvar</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={{...style.btn, ...style.btnDanger}}>
+                <TouchableOpacity 
+                    style={{...style.btn, ...style.btnDanger}}
+                    onPress={limparDados}
+                >
                     <Text>Limpar</Text>
                 </TouchableOpacity>
             </View>
