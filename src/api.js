@@ -2,8 +2,12 @@
 /* eslint-disable prettier/prettier */
 import axios from 'axios'
 
+const url = 'http://192.168.0.105:8000/'
 const api = axios.create({
-    baseURL: 'http://localhost:8000/',
+    baseURL: url,
 })
 
-export default api
+export {
+    api,
+    url,
+}

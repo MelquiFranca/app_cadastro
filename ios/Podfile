@@ -12,6 +12,10 @@ target 'app' do
     :hermes_enabled => false
   )
 
+  pod 'react-native-camera', :path => '../node_modules/react-native-camera'
+
+  pod 'react-native-document-picker', :path => '../node_modules/react-native-document-picker'
+
   target 'appTests' do
     inherit! :complete
     # Pods for testing

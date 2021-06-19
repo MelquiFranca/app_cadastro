@@ -1,10 +1,14 @@
+/* eslint-disable jsx-quotes */
+/* eslint-disable curly */
+/* eslint-disable keyword-spacing */
+/* eslint-disable quotes */
 /* eslint-disable semi */
 /* eslint-disable no-unused-vars */
 /* eslint-disable prettier/prettier */
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, TextInput, StyleSheet, Image, Alert } from 'react-native';
-import { RNCamera } from 'react-native-camera';
-import api from '../../api';
+import React, { useState, useEffect } from 'react'
+import { View, Text, TouchableOpacity, TextInput, StyleSheet, Image, Alert } from 'react-native'
+import DocumentPicker from 'react-native-document-picker'
+import { api } from '../../api'
 
 const Cadastro = ({}) => {
     const [nome, setNome] = useState('')
@@ -12,32 +16,54 @@ const Cadastro = ({}) => {
     const [codigo, setCodigo] = useState(null)
     const [nascimento, setNascimento] = useState(null)
 
+    const selecionarFoto = async () => {
+        try {
+           (async () =>{
+                const fotoSelecionada = await DocumentPicker.pick({
+                    type: [DocumentPicker.types.images],
+                })
+                setFoto(fotoSelecionada)
+           })()
+
+        } catch(e) {
+            setFoto(null)
+            Alert.alert('Erro', e.message)
+        }
+      }
+
     const handleClickSalvar = async () => {
-        const validacao = validarDados()
-        if(!validacao) return
+        try {
+            const validacao = validarDados()
+            if(!validacao) return
 
-        const formData = new FormData()
-        formData.append('codigo', codigo)
-        formData.append('nome', nome)
-        formData.append('nascimento', nascimento)
-        formData.append('foto', {
-            uri: foto.uri,
-            type: 'image/jpeg',
-            name: `${codigo}.jpg`,
-        })
+            const formData = new FormData()
+            formData.append('codigo', codigo)
+            formData.append('nome', nome)
+            formData.append('nascimento', nascimento)
+            if(foto?.uri) {
+                formData.append('foto', {
+                    uri: foto.uri,
+                    type: 'image/jpeg',
+                    name: `${codigo}.jpg`,
+                })
+            }
 
-        const { dados, error, message } = api.post('/usuarios', formData)
+            const { dados, error, message } = api.post('/usuarios', formData)
 
-        let titulo
-        if(error)
-            titulo = 'Erro ao salvar'
-        else
-            titulo = 'Sucesso'
+            let titulo
+            if(error)
+                titulo = 'Erro ao salvar'
+            else
+                titulo = 'Sucesso'
 
-        Alert.alert(titulo, message)
+            Alert.alert(titulo, message)
+        } catch(e) {
+            Alert.alert('Erro', e.message)
+        }
     }
 
     const validarDados = () => {
+
         const titulo = 'Campo Obrigatório'
         if(!nome) {
             Alert.alert(titulo, `Favor preencher o campo Nome.`)
@@ -47,38 +73,42 @@ const Cadastro = ({}) => {
             Alert.alert(titulo, `Favor preencher o campo Código.`)
             return false
         }
-        if(!nascimento) {
-            Alert.alert(titulo, `Favor preencher o campo Nascimento.`)
-            return false
-        }
+        // if(!nascimento) {
+        //     Alert.alert(titulo, `Favor preencher o campo Nascimento.`)
+        //     return false
+        // }
         return true
     }
 
     return (<View style={style.container}>
-        <View style={style.foto}>
-            <View>
-                <RNCamera
-                    ref={dadosFoto => {
-                        setFoto(dadosFoto);
-                    }}
-                    style={{ flex: 1 }}
-                    type={RNCamera.Constants.Type.back}
-                    autoFocus={RNCamera.Constants.AutoFocus.on}
-                    flashMode={RNCamera.Constants.FlashMode.off}
-                    permissionDialogTitle={"Permission to use camera"}
-                    permissionDialogMessage={
-                    "We need your permission to use your camera phone"
-                    }
-                />
+        <View style={style.campoFoto}>
+            <View style={style.viewImagem}>
+                {foto?.uri ?
+                    <Image source={{uri: foto.uri}} style={style.imagem}/> 
+                    :
+                    <Text>Nenhuma imagem selecionada</Text>
+                }
             </View>
-            <TouchableOpacity style={style.btnCaptura}>
+
+            <TouchableOpacity
+                style={style.btnCaptura}
+                onPress={selecionarFoto}
+            >
                 <Text>Capturar Foto</Text>
             </TouchableOpacity>
         </View>
         <View style={style.dados}>
             <View style={{...style.row, width: '50%'}}>
                 <Text style={style.label}>Código:</Text>
-                <TextInput style={style.inputText} placeholder="Digite o código" placeholderTextColor='#999' value={codigo} onChangeText={setCodigo}/>
+                <TextInput
+                    style={style.inputText}
+                    placeholder="Digite o código"
+                    placeholderTextColor='#999'
+                    value={codigo}
+                    onChangeText={setCodigo}
+                    keyboardType='number-pad'
+                    maxLength={6}
+                />
             </View>
             <View style={style.row}>
                 <Text style={style.label}>Nome Completo:</Text>
@@ -115,21 +145,27 @@ const style = StyleSheet.create({
     },
     row: {
         flexDirection: 'column',
-        alignItems: 'flex-start',        
+        alignItems: 'flex-start',
         marginVertical: 5,
     },
-    foto: {
-        flex: 1,
+    campoFoto: {
+        flex: 3,
         flexDirection: 'column',
         alignItems: 'center',
-        marginVertical: 40,
+        marginTop: 5,
+    },
+    viewImagem: {
+        flex: 1,
+        width: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     imagem: {
-        flex: 2,
-
+        height: '100%',
+        width: '50%',
     },
     dados:{
-        flex: 3,
+        flex: 4,
         paddingTop: 50,
         marginHorizontal: '5%',
     },
@@ -171,6 +207,7 @@ const style = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 5,
         backgroundColor: 'lightgray',
+        marginVertical: 5,
     },
 });
 

@@ -5,28 +5,33 @@
 /* eslint-disable prettier/prettier */
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, {useState, useEffect} from 'react'
-import {TouchableOpacity, Alert, FlatList, View, ScrollView, Text, StyleSheet } from 'react-native'
-import api from '../../api'
+import {TouchableOpacity, Alert, FlatList, View, Image, Text, StyleSheet } from 'react-native'
+import Icon from 'react-native-vector-icons/dist/FontAwesome';
+import { api, url } from '../../api'
 
 const Lista = (props) => {
   const [usuarios, setUsuarios] = useState([])
   const [selectedId, setSelectedId] = useState(null);
 
   useEffect(() => {
-    (async () => {
-      const retorno = await fetch('usuarios')      
-    //   if (error) {
-    //     return Alert.alert('Mensagem de Erro', message)
-    //   }
-
-      setUsuarios(retorno.data)
-    })()
-
+    handleClickAtualizar()
   }, []);
 
+  const handleClickAtualizar = async () => {   
+        const {data} = await api.get('usuarios')  
+        if (data.error) {
+            return Alert.alert('Mensagem de Erro', data.message)
+        }
+
+        setUsuarios(data.dados)
+  }
   const renderItemUsuario = ({item}) => {
     return (<View style={style.itemLista}>
-        <Text style={style.itemListaText}>{item.foto}</Text>
+        {/* <Text style={style.itemListaText}>{item.foto}</Text> */}
+        <Image 
+            source={{uri: `${url}uploads/${item.foto}`}}
+            style={style.foto}
+        />
         <Text style={{...style.itemListaText, flex: 1}}>{item.nome}</Text>
         <TouchableOpacity 
             style={style.btnEditar}
@@ -46,7 +51,7 @@ const Lista = (props) => {
   const handleClickNovo = () => {
     props.navigation.navigate('Cadastro')
   }
-  return (<ScrollView contentContainerStyle={style.container}>
+  return (<View style={style.container}>
     <FlatList 
         style={{width: '100%'}}
         data={usuarios}
@@ -55,13 +60,24 @@ const Lista = (props) => {
         extraData={selectedId}
     />
 
-    <TouchableOpacity 
-        style={style.btnNovo}
-        onPress={handleClickNovo}
-    >
-        <Text style={style.btnNovoText}>+</Text>
-    </TouchableOpacity>
-  </ScrollView>)
+    <View style={style.containerBotao}>
+        <TouchableOpacity 
+            style={style.btnNovo}
+            onPress={handleClickNovo}
+        >
+            <Text style={style.btnNovoText}>+</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+            style={style.btnReload}
+            onPress={handleClickAtualizar}
+        >
+            <Text style={style.btnReloadText}>
+                <Icon name="search"/>
+            </Text>
+        </TouchableOpacity>
+    </View>
+  </View>)
 };
 
 const style = StyleSheet.create({
@@ -70,14 +86,32 @@ const style = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'flex-end'
     },
+    containerBotao: {
+        flexDirection: 'row',
+        width: '100%',
+        height: 80,
+        alignItems: 'center', 
+        justifyContent: 'space-evenly',
+    },
     btnNovo: {
         borderRadius: 100,
         height: 70,
         width: 70,
         backgroundColor: 'lightblue',
-        bottom: 10,   
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    btnReload: {
+        borderRadius: 100,
+        backgroundColor: 'lightgreen',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: 70,
+        width: 70,
+    },
+    btnReloadText: {
+        fontSize: 30,
+        color: '#FFF'
     },
     btnNovoText: {
         fontSize: 30,
@@ -101,7 +135,7 @@ const style = StyleSheet.create({
     },
     itemLista: {
         flexDirection: 'row',
-        height: 50,
+        height: 70,
         width: '100%',
         justifyContent: 'center',
         alignItems: 'center',
@@ -111,8 +145,13 @@ const style = StyleSheet.create({
     },
     itemListaText: {
         color: '#333',
-    }
+    },
+    foto: {
+        width: 60,
+        height: 60,
+        borderRadius: 4,
+        marginRight: 5,
+    },
 })
 
 export default Lista
- 
